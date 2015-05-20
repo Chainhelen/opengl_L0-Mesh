@@ -8,6 +8,7 @@
 #include <sstream>
 #include <fstream>
 #include <vector>
+#include "dataStruct.h"
 
 using namespace std;
 
@@ -20,6 +21,8 @@ class ObjLoad{
         GLfloat **vertices;
         GLfloat **verNormal;
         GLfloat **faceNormal;
+        IndexList **verticesvindices;
+        IndexList **verticestindices;
 
     public:
         void readFile(string filename);
@@ -29,6 +32,11 @@ class ObjLoad{
         void deleteFaceNormal();
         GLfloat getAreaByFaceIndex(int findex);
         void getFaceNormalByFaceIndex(GLfloat *normal,int findex);
+        void getVerticesVindices();
+        void getVerticesTindices();
+        void delVerticesVindices();
+        void delVerticesTindices();
+        void insertIndexList(IndexList **Head, int column, int data);
 
         ObjLoad();
         ~ObjLoad();

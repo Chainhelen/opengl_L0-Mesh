@@ -10,6 +10,8 @@ ObjLoad::ObjLoad(){
     vertices = NULL;
     verNormal = NULL;
     faceNormal = NULL;
+    verticesvindices = NULL;
+    verticestindices = NULL;
 }
 
 ObjLoad::~ObjLoad(){
@@ -29,22 +31,11 @@ ObjLoad::~ObjLoad(){
         delete []vertices;
         vertices = NULL;
     }
-    if(verNormal){
-        for(int i = 0;i < numVertices;i++){
-            delete []verNormal[i];
-            verNormal[i] = NULL;
-        }
-        delete []verNormal;
-        verNormal = NULL;
-    }
-    if(faceNormal){
-        for(int i = 0;i < numFace;i++){
-            delete []faceNormal[i];
-            faceNormal[i] = NULL;
-        }
-        delete []faceNormal;
-        faceNormal = NULL;
-    }
+    deleteFaceNormal();
+    deleteVerNormal();
+    delVerticesVindices();
+    delVerticesTindices();
+
     numFace = 0;
     numVertices = 0;
 }
@@ -126,19 +117,59 @@ void ObjLoad::readFile(string addrstr){
     vector<int>().swap(faceIndex);
 }
 void ObjLoad::updateVerNormal(){
+    if(NULL == verticestindices){
+        printf("no triangles relation\n");
+        return ;
+    }
+    if(NULL == faceNormal){
+        printf("no faceNormal\n");
+        return ;
+    }
     if(NULL == verNormal){
         verNormal = new GLfloat *[numVertices];
         for(int i = 0;i < numVertices;i++){
             verNormal[i] = new GLfloat[3];
         }
     }
+
+    IndexList *tail;
+    double vec[3], vecLen;
+
+    for(int i = 0;i < numVertices;i++){
+        for(int j = 0;j < 3;j++){
+            vec[j] = 0.0;
+        }
+        vecLen = 0.0;
+
+        tail = verticestindices[i];
+        while(tail){
+            for(int j = 0;j < 3;j++){
+                vec[j] += faceNormal[tail->data][j];
+            }
+            tail = tail->next;
+        }
+        for(int j = 0;j < 3;j++){
+            vecLen += vec[j] * vec[j];
+        }
+        vecLen = sqrt(vecLen);
+        vecLen = vecLen > 1e-3 ? vecLen : 1e-3;
+
+        for(int j = 0;j < 3;j++){
+            vec[j] /= vecLen;
+        }
+    }
+    tail = NULL;
 }
+
 void ObjLoad::updateFaceNormal(){
     if(NULL == faceNormal){
         faceNormal = new GLfloat *[numFace];
         for(int i = 0;i < numFace;i++){
             faceNormal[i] = new GLfloat[3];
         }
+    }
+    for(int findex = 0;findex < numFace;findex++){
+        getFaceNormalByFaceIndex(faceNormal[findex], findex);
     }
 }
 void ObjLoad::deleteVerNormal(){
@@ -178,6 +209,11 @@ GLfloat ObjLoad::getAreaByFaceIndex(int findex){
     normal[0] = u[1] * v[2] - u[2] * v[1];
     normal[1] = u[2] * v[0] - u[0] * v[2];
     normal[2] = u[0] * v[1] - u[1] * v[0];
+    GLfloat sum = 0.0;
+    for(int i = 0;i < 3;i++){
+        sum += normal[i] * normal[i];
+    }
+    return sqrt(sum);
 }
 
 void ObjLoad::getFaceNormalByFaceIndex(GLfloat *normal,int findex){
@@ -207,3 +243,92 @@ void ObjLoad::getFaceNormalByFaceIndex(GLfloat *normal,int findex){
         normal[i] /= sum;
     }
 }
+
+void ObjLoad::getVerticesVindices()
+{
+    verticesvindices = new IndexList*[numVertices];
+
+    for(int i = 0;i < numVertices;i++){
+        verticesvindices[i] = NULL;
+    }
+
+    for(int i = 0;i < numFace;i++){
+        int a[3];
+        for(int j = 0;j < 3;j++){
+            a[j] = face[i][j];
+        }
+        for(int j = 0;j < 3;j++){
+            insertIndexList(verticesvindices, a[j % 3], a[(j + 1) % 3]);
+        }
+    }
+}
+
+void ObjLoad::getVerticesTindices()
+{
+    verticestindices = new IndexList*[numVertices];
+
+    for(int i = 0;i < numVertices;i++){
+        verticestindices[i] = NULL;
+    }
+
+    for(int i = 0;i < numFace;i++){
+        int a[3];
+        for(int j = 0;j < 3;j++){
+            a[j] = face[i][j];
+        }
+        for(int j = 0;j < 3;j++){
+            insertIndexList(verticestindices, a[j], i);
+        }
+    }
+}
+void ObjLoad::delVerticesVindices()
+{
+    if(NULL == verticesvindices){
+        return ;
+    }
+
+    for(int i = 0;i <numVertices;i++){
+        delList(verticesvindices[i]);
+        verticesvindices[i] = NULL;
+    }
+    delete []verticesvindices;
+    verticesvindices = NULL;
+}
+void ObjLoad::delVerticesTindices()
+{
+    if(NULL == verticestindices){
+        return ;
+    }
+
+    for(int i = 0;i <numVertices;i++){
+        delList(verticestindices[i]);
+        verticestindices[i] = NULL;
+    }
+    delete []verticestindices;
+    verticestindices = NULL;
+}
+void ObjLoad::insertIndexList(IndexList **Head, int column, int data)
+{
+    IndexList *Node = new IndexList();
+    Node->data = data;
+    Node->next = NULL;
+
+    if(NULL == Head[column]){
+        Head[column] = Node;
+        return ;
+    }
+
+    if(data == Head[column]->data){
+        return ;
+    }
+
+    IndexList *tail = Head[column];
+    while(tail->next){
+        if(data == tail->next->data){
+            return ;
+        }
+        tail = tail->next;
+    }
+    tail->next = Node;
+}
+
