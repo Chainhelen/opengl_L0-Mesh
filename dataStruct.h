@@ -6,14 +6,14 @@ class IndexList{
         IndexList *next;
 };
 
-template<class T>;
-void delList<T Head>{
+template<class T>
+void delList(T *Head){
     if(NULL == Head){
         return;
     }
 
     T *Node,*pNode;
-    Node = head->next;
+    Node = Head->next;
 
     while(NULL != Node){
         pNode = Node->next;

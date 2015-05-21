@@ -115,6 +115,9 @@ void ObjLoad::readFile(string addrstr){
     }
     vector<double>().swap(verVector);
     vector<int>().swap(faceIndex);
+
+    getVerticesVindices();
+    getVerticesTindices();
 }
 void ObjLoad::updateVerNormal(){
     if(NULL == verticestindices){
@@ -148,6 +151,7 @@ void ObjLoad::updateVerNormal(){
             }
             tail = tail->next;
         }
+
         for(int j = 0;j < 3;j++){
             vecLen += vec[j] * vec[j];
         }
@@ -155,7 +159,7 @@ void ObjLoad::updateVerNormal(){
         vecLen = vecLen > 1e-3 ? vecLen : 1e-3;
 
         for(int j = 0;j < 3;j++){
-            vec[j] /= vecLen;
+            verNormal[i][j] = vec[j] / vecLen;
         }
     }
     tail = NULL;
